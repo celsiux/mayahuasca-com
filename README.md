@@ -14,10 +14,10 @@ Cloudflare is the DNS and hosting provider. Its API credential is stored in Infi
 ${VERTIXOS_REPO:-$HOME/vertixos}/scripts/vertix-infisical-run --path /infra/cloudflare -- npm run deploy
 ```
 
-The older ChatGPT Sites project is not part of this publishing path. Its custom hostname currently controls `mayahuasca.com` and must be released before the Worker can serve that domain. The current Cloudflare-hosted public preview is `https://new.mayahuasca.com/`. Video files referenced by the homepage are served from the separate Cloudflare R2 bucket `maya` through `media.mayahuasca.com`.
+The older ChatGPT Sites project is not part of this publishing path. `mayahuasca.com` and `www.mayahuasca.com` are attached directly to Worker `mayahuasca-site`. Video files referenced by the homepage are served from the separate Cloudflare R2 bucket `maya` through `media.mayahuasca.com`.
 
 ## Workers Builds connection
 
 Connect `celsiux/mayahuasca-com` to the existing `mayahuasca-site` Worker in **Workers & Pages → mayahuasca-site → Settings → Builds**. Use the repository root, production branch `main`, no build command, and deploy command `npm run deploy`. Cloudflare requires an interactive authorization of its GitHub App before API setup. Its Builds API also requires a **user-scoped** API token with **Workers Builds Configuration: Edit** and **Workers Scripts: Read**; the existing account-scoped deployment token cannot configure Builds. Store any additional token in Infisical, never in this repository.
 
-After the old ChatGPT Sites custom hostname is released, attach `mayahuasca.com` and `www.mayahuasca.com` to the Worker and verify the public responses before considering the cutover complete.
+The root and `www` Worker custom domains are active. After each release, verify both hostnames return the expected homepage, offer page, images, and `llms.txt`.
