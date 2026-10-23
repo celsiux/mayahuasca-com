@@ -3,7 +3,8 @@
   "private": true,
   "version": "1.0.0",
   "scripts": {
-    "deploy": "wrangler deploy"
+    "deploy": "node scripts/sync-r2.mjs && wrangler deploy",
+    "sync:r2": "node scripts/sync-r2.mjs"
   },
   "devDependencies": {
     "wrangler": "4.152.0"

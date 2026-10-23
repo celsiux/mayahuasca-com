@@ -1,8 +1,11 @@
 {
   "name": "mayahuasca-site",
   "compatibility_date": "2026-10-22",
-  "assets": {
-    "directory": "./dist",
-    "not_found_handling": "none"
-  }
+  "main": "./src/worker.js",
+  "r2_buckets": [
+    {
+      "binding": "SITE_BUCKET",
+      "bucket_name": "maya-site"
+    }
+  ]
 }
