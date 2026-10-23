@@ -1,0 +1,17 @@
+{
+  "name": "Mayahuasca · Caldito de Corazón",
+  "short_name": "Mayahuasca",
+  "description": "Testimonios, sesiones presenciales en Perú e información por WhatsApp.",
+  "lang": "es",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f3eee2",
+  "theme_color": "#f3eee2",
+  "icons": [
+    {
+      "src": "/Mayahuasca-Logo-fast.webp",
+      "sizes": "100x91",
+      "type": "image/webp"
+    }
+  ]
+}

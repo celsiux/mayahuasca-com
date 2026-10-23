@@ -1,0 +1,16 @@
+# Mayahuasca
+
+> Sitio de Mayahuasca sobre Caldito de Corazón, testimonios y sesiones presenciales en Perú. La página ofrece contacto directo por WhatsApp.
+
+## Página principal
+
+- [Mayahuasca — Caldito de Corazón](https://mayahuasca.com/): información del producto, testimonios, sesiones en Lima, Cusco y Arequipa, y contacto por WhatsApp.
+
+## Experiencia en Perú
+
+- [Promoción para personas del extranjero: 3 días en Perú](https://mayahuasca.com/experiencia-3-dias-peru/index.md): traslado, hospedaje, comidas y tres sesiones por USD $350; consulta disponibilidad por WhatsApp.
+
+## Información relacionada
+
+- [Guías de ayahuasca en español](https://ayahuasca.com.pe/): contexto cultural, seguridad y situación legal.
+- [Mapa del sitio](https://mayahuasca.com/sitemap.xml)
