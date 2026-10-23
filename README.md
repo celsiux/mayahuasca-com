@@ -14,7 +14,7 @@ Cloudflare is the DNS and hosting provider. Its API credential is stored in Infi
 ${VERTIXOS_REPO:-$HOME/vertixos}/scripts/vertix-infisical-run --path /infra/cloudflare -- npm run deploy
 ```
 
-The older ChatGPT Sites project is not part of this publishing path. Its custom hostname currently controls `mayahuasca.com` and must be released before the Worker can serve that domain. Video files referenced by the homepage are served from the existing public Cloudflare R2 endpoint; `dist/` contains the page files and image assets.
+The older ChatGPT Sites project is not part of this publishing path. Its custom hostname currently controls `mayahuasca.com` and must be released before the Worker can serve that domain. Video files referenced by the homepage are served from the Cloudflare R2 bucket `maya` through `media.mayahuasca.com`; `dist/` contains the page files and image assets.
 
 ## Workers Builds connection
 
