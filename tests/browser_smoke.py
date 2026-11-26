@@ -83,6 +83,8 @@ def run(stage, evidence):
             "maya-tiktok-comentarios-20261126.html",
             "maya-tiktok-historico.html",
             "videos.html",
+            "maya-publicidad-ayrshare.html",
+            "maya-youtube-relanzamiento.html",
         ]
         for width in [360, 390, 768, 1280]:
             page.set_viewport_size({"width": width, "height": 844})

@@ -1,7 +1,10 @@
 import copy
 import importlib.util
+import json
+import tempfile
 from pathlib import Path
 import unittest
+from unittest.mock import patch
 
 
 def load(name):
@@ -128,6 +131,62 @@ class LibraryTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             lib.SafeDocument().feed('<a href="' + good + '">7000000000000000001</a>')
 
+    def test_comparison_type_and_scope_are_distinct_from_a_period(self):
+        rendered = lib.render_library(
+            [item(coverage=None, type="Comparativa", scope="Capacidades de plataforma")]
+        )
+        self.assertIn("<dt>Tipo</dt><dd>Comparativa</dd>", rendered)
+        self.assertIn("<dt>Alcance</dt><dd>Capacidades de plataforma</dd>", rendered)
+        self.assertNotIn("Período analizado", rendered)
+
+    def test_official_documentation_links_are_explicit_and_do_not_widen_tiktok_exception(
+        self,
+    ):
+        for url in [
+            "https://developers.facebook.com/documentation/ads-commerce/marketing-api/insights",
+            "https://developers.google.com/google-ads/api/docs/campaigns/overview",
+            "https://www.ayrshare.com/docs/apis/ads/overview#supported-platforms",
+        ]:
+            lib.safe_link(url)
+        for url in [
+            "https://developers.google.com.evil.test/google-ads/api/docs/",
+            "https://developers.facebook.com/redirect?url=bad",
+            "https://developers.google.com/google-ads/api/../redirect",
+            "https://www.ayrshare.com/docs/%2e%2e/redirect",
+            "https://www.ayrshare.com/docs/apis/ads?token=example",
+            "https://github.com/unrelated/project",
+        ]:
+            with self.subTest(url=url), self.assertRaises(ValueError):
+                lib.safe_link(url)
+
+    def test_youtube_sources_are_plain_canonical_anchors_not_embeds_or_tracking_links(
+        self,
+    ):
+        for url in [
+            "https://www.youtube.com/watch?v=ABCDEFGHIJK",
+            "https://www.youtube.com/channel/UC" + "A" * 22,
+            "https://support.google.com/youtube/answer/9313698?hl=es",
+        ]:
+            lib.safe_link(url)
+        for url in [
+            "https://www.youtube.com/watch?v=ABCDEFGHIJK&token=private",
+            "https://www.youtube.com/embed/ABCDEFGHIJK",
+            "https://www.youtube.com.evil.test/watch?v=ABCDEFGHIJK",
+            "https://support.google.com/youtube/answer/9313698?redirect=evil",
+            "https://mayahuasca.com/preview/private.json",
+        ]:
+            with self.subTest(url=url), self.assertRaises(ValueError):
+                lib.safe_link(url)
+        rendered = lib.markdown_document(
+            "# Ejemplo\n\n## Anexo de método\n\nUna nota de método.", "Ejemplo"
+        )
+        self.assertIn(
+            '<details class="report-appendix"><summary>Anexos y fuentes</summary>',
+            rendered,
+        )
+        self.assertIn("<h2>Anexo de método</h2>", rendered)
+        self.assertIn("Una nota de método.", rendered)
+
     def test_scripts_and_event_attributes_are_refused(self):
         for source in [
             "<script>x</script>",
@@ -153,6 +212,46 @@ class LibraryTests(unittest.TestCase):
         self.assertIn('href="/preview/"', rendered)
         self.assertIn('id="informe"', rendered)
 
+    def test_private_source_map_adds_reports_without_rewriting_the_layout_and_pins_each_hash(
+        self,
+    ):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            catalogue = root / "catalogue.json"
+            catalogue.write_text(json.dumps([item(path=key) for key in lib.REPORTS]))
+            originals = root / "originals"
+            originals.mkdir()
+            hashes, sources = {}, {}
+            for key in lib.REPORTS:
+                if key in lib.control.DOCUMENT_HASHES:
+                    source = originals / key.split("/")[1]
+                    source.write_text(
+                        "<html><head><title>Original</title></head><body><main><h1>Original</h1><p>42 vistas</p></main></body></html>"
+                    )
+                    hashes[key] = lib.control.file_sha(source)
+                else:
+                    source = root / (key.split("/")[1] + ".md")
+                    source.write_text(
+                        "# Ejemplo\n\nUn informe adicional con datos observados."
+                    )
+                    sources[key] = {
+                        "file": str(source),
+                        "sha256": lib.control.file_sha(source),
+                    }
+            source_map = root / "sources.json"
+            source_map.write_text(json.dumps(sources))
+            with patch.dict(lib.control.DOCUMENT_HASHES, hashes, clear=True):
+                lib.render(catalogue, originals, root / "rendered", sources=source_map)
+                self.assertEqual(
+                    len(list((root / "rendered").glob("*.html"))), len(lib.REPORTS) + 1
+                )
+                next(iter(sources.values()))["sha256"] = "0" * 64
+                source_map.write_text(json.dumps(sources))
+                with self.assertRaises(ValueError):
+                    lib.render(
+                        catalogue, originals, root / "refused", sources=source_map
+                    )
+
     def test_markdown_renders_tables_and_safe_links_while_escaping_raw_html(self):
         source = '# Título\n\n<p onclick="bad">texto</p>\n\n| Video | Vistas |\n|---|---:|\n| [Ver](https://www.tiktok.com/@mayahuasca.gracias/video/7000000000000000001) | **42** |'
         rendered = lib.markdown_document(source, "Ejemplo")
@@ -160,6 +259,10 @@ class LibraryTests(unittest.TestCase):
         self.assertNotIn("<p onclick=", rendered)
         self.assertIn('<th scope="col">Vistas</th>', rendered)
         self.assertIn('data-label="Vistas"><strong>42</strong>', rendered)
+        self.assertIn("<span>Fuentes</span>", lib.inline("[Fuentes](SOURCES.md)"))
+        self.assertNotIn("<a", lib.inline("[Fuentes](SOURCES.md)"))
+        with self.assertRaises(ValueError):
+            lib.inline("[Fuentes](../SOURCES.md)")
         with self.assertRaises(ValueError):
             lib.markdown_document("| A |\n|---|\n| B | C |", "Ejemplo")
 

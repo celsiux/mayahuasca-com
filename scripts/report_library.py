@@ -4,11 +4,13 @@
 import argparse
 from datetime import date
 import html
+import hashlib
 from html.parser import HTMLParser
 import importlib.util
 import json
 from pathlib import Path
 import re
+from urllib.parse import urlsplit
 
 ROOT = Path(__file__).resolve().parent.parent
 spec = importlib.util.spec_from_file_location(
@@ -48,15 +50,49 @@ def private_guard(value):
         raise ValueError("Private identifier or credential pattern in publication")
 
 
+DOCUMENTATION = {
+    "www.ayrshare.com": ("/docs/", "/supported-networks/", "/pricing/", "/pricing.md"),
+    "developers.facebook.com": (
+        "/documentation/ads-commerce/",
+        "/docs/marketing-api/",
+        "/docs/business-management-apis/",
+    ),
+    "developers.google.com": ("/google-ads/api/",),
+    "business-api.tiktok.com": ("/portal/docs/",),
+    "github.com": ("/tiktok/tiktok-business-api-sdk/",),
+}
+
+
 def safe_link(value):
     if TIKTOK.fullmatch(value):
         return
-    if value.startswith(("https://www.ayrshare.com/docs/", "#")) and not any(
-        c in value for c in '<>"\\\r\n'
+    if re.fullmatch(
+        r"https://www\.youtube\.com/(?:watch\?v=[A-Za-z0-9_-]{11}|channel/UC[A-Za-z0-9_-]{22})",
+        value,
+    ):
+        return
+    if value == "https://mayahuasca.com/":
+        return
+    if re.fullmatch(
+        r"https://support\.google\.com/youtube/answer/\d{1,9}(?:\?hl=(?:es|en))?", value
+    ):
+        return
+    if value.startswith("#") and re.fullmatch(r"#[a-zA-Z0-9_-]+", value):
+        return
+    url = urlsplit(value)
+    if (
+        url.scheme == "https"
+        and url.netloc in DOCUMENTATION
+        and not url.query
+        and any(url.path.startswith(prefix) for prefix in DOCUMENTATION[url.netloc])
+        and not any(c in value for c in '<>"\\\r\n%')
+        and not any(segment in {".", ".."} for segment in url.path.split("/"))
     ):
         private_guard(value)
         return
-    raise ValueError("Only canonical native TikTok and documentation links are allowed")
+    raise ValueError(
+        "Only canonical native TikTok and explicit official documentation links are allowed"
+    )
 
 
 def text(value, limit=240):
@@ -87,14 +123,12 @@ def validate_catalogue(items):
         raise ValueError("Catalogue must be an array")
     seen = set()
     for item in items:
-        if not isinstance(item, dict) or set(item) != {
-            "path",
-            "title",
-            "published",
-            "purpose",
-            "category",
-            "coverage",
-        }:
+        required = {"path", "title", "published", "purpose", "category", "coverage"}
+        if (
+            not isinstance(item, dict)
+            or not required.issubset(item)
+            or set(item) - required - {"type", "scope"}
+        ):
             raise ValueError("Unexpected catalogue fields")
         path = item["path"]
         if (
@@ -112,6 +146,9 @@ def validate_catalogue(items):
             raise ValueError("Unknown category")
         if item["coverage"] is not None:
             text(item["coverage"])
+        for field in ["type", "scope"]:
+            if field in item:
+                text(item[field], 120)
     return sorted(items, key=lambda x: (x["published"], x["path"]), reverse=True)
 
 
@@ -125,9 +162,14 @@ def metadata(item):
         if item["coverage"]
         else ""
     )
+    extras = "".join(
+        f"<div><dt>{label}</dt><dd>{esc(item[key])}</dd></div>"
+        for key, label in [("type", "Tipo"), ("scope", "Alcance")]
+        if key in item
+    )
     return (
         f'<dl class="report-meta"><div><dt>Publicado</dt><dd><time datetime="{item["published"]}">'
-        f"{display_date(item['published'])}</time></dd></div>{coverage}</dl>"
+        f"{display_date(item['published'])}</time></dd></div>{coverage}{extras}</dl>"
     )
 
 
@@ -258,6 +300,10 @@ def inline(value):
         link = re.fullmatch(r"\[([^\]\n]+)\]\(([^\s)]+)\)", part)
         if link:
             label, href = link.groups()
+            if re.fullmatch(r"[A-Za-z0-9_-]+\.(?:md|json|csv)", href):
+                private_guard(label)
+                result.append(f"<span>{esc(label)}</span>")
+                continue
             safe_link(href)
             private_guard(label)
             result.append(f'<a href="{esc(href)}" rel="noreferrer">{esc(label)}</a>')
@@ -274,6 +320,7 @@ def markdown_document(source, title):
     """Render prose and data as semantic HTML; raw HTML is always escaped."""
     lines = source.splitlines()
     output = []
+    appendix = False
     i = 0
     while i < len(lines):
         line = lines[i]
@@ -311,6 +358,15 @@ def markdown_document(source, title):
         heading = re.match(r"^(#{1,3}) (.+)$", line)
         if heading:
             level, content = len(heading[1]), heading[2]
+            if (
+                level == 2
+                and not appendix
+                and re.match(r"Anexos?\b|Apéndices?\b", content, re.I)
+            ):
+                output.append(
+                    '<details class="report-appendix"><summary>Anexos y fuentes</summary>'
+                )
+                appendix = True
             output.append(f"<h{level}>{inline(content)}</h{level}>")
         elif line.startswith("> "):
             output.append("<blockquote><p>" + inline(line[2:]) + "</p></blockquote>")
@@ -332,6 +388,8 @@ def markdown_document(source, title):
                 paragraph.append(lines[i])
             output.append("<p>" + inline(" ".join(paragraph)) + "</p>")
         i += 1
+    if appendix:
+        output.append("</details>")
     return (
         '<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow"><title>'
         + esc(title)
@@ -341,35 +399,50 @@ def markdown_document(source, title):
     )
 
 
-def render(catalogue, source_dir, output, history=None, history_sha=None):
+def read_document(path, expected):
+    path = Path(path)
+    if path.is_symlink():
+        raise ValueError("Report source must be a regular reviewed file")
+    with path.open("rb") as f:
+        body = f.read(262145)
+    if len(body) > 262144 or hashlib.sha256(body).hexdigest() != expected:
+        raise ValueError("Report source differs from reviewed SHA-256")
+    return body.decode("utf-8")
+
+
+def render(catalogue, source_dir, output, history=None, history_sha=None, sources=None):
     items = validate_catalogue(json.loads(Path(catalogue).read_text()))
     if {x["path"] for x in items} != set(REPORTS):
         raise ValueError("Include every registered report; preserve dated documents")
+    documents = json.loads(Path(sources).read_text()) if sources else {}
+    if not isinstance(documents, dict) or any(
+        path not in REPORTS for path in documents
+    ):
+        raise ValueError("Only registered report sources are allowed")
+    if history:
+        documents["preview/maya-tiktok-historico.html"] = {
+            "file": str(history),
+            "sha256": history_sha,
+        }
     rendered = {"index.html": render_library(items)}
     for item in items:
         name = item["path"].split("/")[1]
         src = Path(source_dir) / name
         if item["path"] in control.DOCUMENT_HASHES:
-            if (
-                src.is_symlink()
-                or control.file_sha(src) != control.DOCUMENT_HASHES[item["path"]]
-            ):
-                raise ValueError(
-                    "Source differs from reviewed document; new content needs explicit review"
-                )
-            rendered[name] = render_report(item, src.read_text())
-        else:
-            if (
-                not history
-                or not history_sha
-                or Path(history).is_symlink()
-                or control.file_sha(history) != history_sha
-            ):
-                raise ValueError(
-                    "Historical source requires its reviewed explicit SHA-256"
-                )
             rendered[name] = render_report(
-                item, markdown_document(Path(history).read_text(), item["title"])
+                item, read_document(src, control.DOCUMENT_HASHES[item["path"]])
+            )
+        else:
+            record = documents.get(item["path"], {})
+            if set(record) != {"file", "sha256"} or not re.fullmatch(
+                r"[a-f0-9]{64}", record.get("sha256") or ""
+            ):
+                raise ValueError(
+                    "New Markdown report requires an explicit reviewed source/hash"
+                )
+            source = read_document(record["file"], record["sha256"])
+            rendered[name] = render_report(
+                item, markdown_document(source, item["title"])
             )
     output = Path(output)
     if output.resolve().is_relative_to(ROOT):
@@ -388,5 +461,17 @@ if __name__ == "__main__":
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--history", type=Path)
     parser.add_argument("--history-sha")
+    parser.add_argument(
+        "--sources",
+        type=Path,
+        help="Private registered path to reviewed Markdown file/hash map",
+    )
     args = parser.parse_args()
-    render(args.catalogue, args.source_dir, args.output, args.history, args.history_sha)
+    render(
+        args.catalogue,
+        args.source_dir,
+        args.output,
+        args.history,
+        args.history_sha,
+        args.sources,
+    )

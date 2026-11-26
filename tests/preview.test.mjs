@@ -127,7 +127,7 @@ test('both alternate URL classes explicitly disabled in production config',()=>{
   assert.equal(config.name,'mayahuasca-site');assert.equal(config.r2_buckets[0].bucket_name,'maya-site');
 });
 
-for (const path of ['/preview/maya-tiktok-historico.html', '/preview/videos.html', '/preview/video-explorer.js', '/preview/videos.json']) {
+for (const path of ['/preview/maya-youtube-relanzamiento.html', '/preview/maya-publicidad-ayrshare.html', '/preview/maya-tiktok-historico.html', '/preview/videos.html', '/preview/video-explorer.js', '/preview/videos.json']) {
   test(`registered library resource requires staff auth: ${path}`, async () => {
     assert.equal((await fetchDoc(path)).status, 403); assert.equal(reads.length, 0);
     assert.equal((await fetchDoc(path, await token({ email: 'outsider@example.invalid' }))).status, 403); assert.equal(reads.length, 0);
