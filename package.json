@@ -3,10 +3,18 @@
   "private": true,
   "version": "1.0.0",
   "scripts": {
-    "deploy": "node scripts/sync-r2.mjs && wrangler deploy",
-    "sync:r2": "node scripts/sync-r2.mjs"
+    "deploy": "node scripts/sync-r2.mjs && wrangler deploy --keep-vars",
+    "sync:r2": "node scripts/sync-r2.mjs",
+    "test": "node --test tests/preview.test.mjs",
+    "check": "node --check src/worker.js && node --check src/preview.js",
+    "typecheck": "tsc -p jsconfig.json"
   },
   "devDependencies": {
-    "wrangler": "4.152.0"
-  }
+    "wrangler": "4.152.0",
+    "typescript": "5.9.3"
+  },
+  "dependencies": {
+    "jose": "6.2.12"
+  },
+  "type": "module"
 }

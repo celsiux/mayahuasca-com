@@ -21,3 +21,7 @@ The older ChatGPT Sites project is not part of this publishing path. `mayahuasca
 Connect `celsiux/mayahuasca-com` to the existing `mayahuasca-site` Worker in **Workers & Pages → mayahuasca-site → Settings → Builds**. Use the repository root, production branch `main`, no build command, and deploy command `npm run deploy`. Cloudflare requires an interactive authorization of its GitHub App before API setup. Its Builds API also requires a **user-scoped** API token with **Workers Builds Configuration: Edit** and **Workers Scripts: Read**; the existing account-scoped deployment token cannot configure Builds. Store any additional token in Infisical, never in this repository.
 
 The root and `www` Worker custom domains are active. After each release, verify both hostnames return the expected homepage, offer page, images, and `llms.txt`.
+
+## Private report documents
+
+The scoped `/preview/` report path is prepared in [docs/private-reports.md](docs/private-reports.md). Its coordinator-only, sealed procedure reuses this Worker, the private R2 bucket and the existing Maya staff audience. The actual reports stay in private operational packets outside this public repository and outside `dist/`. Normal site deployment now retains the privately supplied authorization variables with `--keep-vars`; both workers.dev and version URLs remain disabled explicitly. Do not upload private documents with the public `sync:r2` command or apply the packet before the independent security review.
