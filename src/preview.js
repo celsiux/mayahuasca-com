@@ -1,11 +1,8 @@
+import reportFiles from './report-files.json' with { type: 'json' };
 import { createRemoteJWKSet, jwtVerify } from 'jose';
 
 const keys = new Map();
-const FILES = new Set([
-  'preview/index.html',
-  'preview/maya-tiktok-rendimiento-20261126.html',
-  'preview/maya-tiktok-comentarios-20261126.html'
-]);
+const FILES = new Set(reportFiles);
 const HEADERS = {
   'Cache-Control': 'private, no-store, max-age=0',
   'X-Robots-Tag': 'noindex, nofollow, noarchive',
@@ -61,7 +58,11 @@ export async function preview(request, env, key, keyResolver) {
   }
   const object = await env.SITE_BUCKET.get(key);
   if (!object) return denied(404);
-  return new Response(request.method === 'HEAD' ? null : object.body, {
-    headers: { ...HEADERS, 'Content-Type': 'text/html; charset=utf-8' }
-  });
+  const type = key.endsWith('.json') ? 'application/json; charset=utf-8' :
+    key.endsWith('.js') ? 'application/javascript; charset=utf-8' : 'text/html; charset=utf-8';
+  const headers = { ...HEADERS, 'Content-Type': type };
+  if (key === 'preview/videos.html') {
+    headers['Content-Security-Policy'] += "; script-src https://mayahuasca.com/preview/video-explorer.js; connect-src https://mayahuasca.com/preview/videos.json";
+  }
+  return new Response(request.method === 'HEAD' ? null : object.body, { headers });
 }

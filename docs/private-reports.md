@@ -1,3 +1,71 @@
+# Private report library and video explorer — T-502
+
+T-502 / 74e9f6a5-c293-4fbd-911a-7dd04cb60db2. The original T453 installation below is retained for audit. **Do not rerun its installation apply or rollback.** The live baseline is now the protected Worker version `3176bea5-7a54-4807-9b2d-bccb3e3c5646`, source `aa416a45c57edd5c542b5ef5227eb9be21558f71`, with an existing Access app and a single-use installation journal. This update has its own packet, journal and rollback.
+
+## Catalogue and presentation
+
+Keep the actual catalogue JSON and report bodies outside the public repository. Each catalogue entry has `path`, `title`, `published` (strict ISO calendar date), `purpose`, `category`, and `coverage` (text or null); optional `type` and `scope` describe comparisons or platform-capability studies without inventing a measurement period. Publication date is never inferred from the coverage period. Categories are `redes`, `finanzas`, `operacion`, `tecnologia`; only populated categories render. Native category anchors work without scripts. Future real reports reuse the same layout and require explicit registration and review; there are no placeholder reports.
+
+`src/report-files.json` is the exact protected allowlist shared by the Worker and offline tools. Register a canonical `preview/maya-…html` report there before preparing its catalogue entry; never derive an object path from browser input. A new document also needs an explicitly reviewed file/hash entry in a private `--sources` JSON map and a new sealed update baseline. No arbitrary R2 listing or browser mutation is supported. The index and every report, script and dataset remain staff-authenticated before storage reads. The old dated analysis, comments review, separate historical analysis, advertising comparison and YouTube proposal retain distinct stable URLs. A plan horizon uses optional scope metadata, separate from the source-data coverage period.
+
+`report_library.py` renders the private catalogue and restyles both pinned reviewed documents without changing their body markup. New Markdown reports require an explicit reviewed source/hash in the private map (the historical CLI arguments also remain supported); its small Markdown renderer escapes raw HTML and creates semantic tables. Markdown appendices use native expandable details without changing their prose. Exact canonical native TikTok permalinks for the verified account may contain a 19-digit public native ID **only in href**. Query strings, credentials, fragments, alternate hosts/accounts, arbitrary links and active markup are refused. Reference anchors additionally allow only explicitly listed official Ayrshare, Meta, Google and TikTok documentation path prefixes, canonical YouTube watch/channel URLs, the public brand homepage and numeric YouTube help articles, without credentials, encoded paths or traversal; queries are refused except a single explicit YouTube help locale (`hl=es`, `hl=en`, `hl=en-uk`) and the canonical YouTube video `v` parameter. Markdown references to non-served private evidence basenames (.md/.json/.csv) render as plain text, never dead download links. All other relative links are refused. Email, IP, phone, long-ID text and credential guards remain active elsewhere; the generic polly-status publisher is unchanged. TikTok links navigate normally under the original report CSP; no player or embed is loaded.
+
+## Protected video explorer
+
+The historical report links to `/preview/videos.html`. Its external module `/preview/video-explorer.js` fetches only `/preview/videos.json`, same-origin, `no-store`, without following authentication redirects. These three paths are explicitly registered. Only the explorer HTML gets exact CSP script/connect sources for those two URLs. All other responses retain the original `default-src 'none'` policy, privacy headers, canonical-host checks and exact staff JWT requirements. There is no inline script, external font/image request, tracker, service worker or browser persistence.
+
+`video_dataset.py` compiles a bounded private CSV projection, not the 82 MB raw response JSON. Up to 5,000 records / 6 MB are permitted; the delivered dataset has 3,284. Native URLs must exactly match the record ID and verified TikTok account. Cards render 24 records per page using DOM `textContent`, with search, year, frequent literal caption hashtags, sorting, a real candidate-queue filter, count, reset, empty/error/retry states and keyboard focus after paging. The 80 most frequent source hashtags populate the menu; search can find other caption tags. No model topic inference occurs. Captions over 2,000 characters become explicit excerpts; full source stays in the private evidence. PII-like caption text is explicitly redacted if present, with audit counts, never encoded to bypass guards. No native ID is shown as a caption label.
+
+Primary metrics are views, shares and saves; details include likes/comments, rates, attributed followers, watch metrics and reach where available. Missing fields stay null. Provider-default zeros in watch/reach fields stay unavailable; genuine literal zero engagement counts remain zero. Profile views are omitted when only default zeros/missing are present. Duration, average watch time and total watch time are separate seconds fields. Completion is stored as a fraction in [0,1] and displayed ×100%; values outside that scale are rejected. Sources/availability proof belong in the private context. The source CSV has no cover field, so the explorer uses text cards and original TikTok links, without inventing thumbnails or persisting signed media URLs.
+
+## Offline preparation and gates
+
+Use `python3 -B -I` for isolated render/update CLI commands, so imported local modules do not create bytecode. Render into a new private directory outside the repository:
+
+```sh
+python3 -B -I scripts/report_library.py --catalogue <private-catalogue.json> \
+  --source-dir <original-sealed-packet> --history <reviewed-history.md> \
+  --history-sha <reviewed-sha256> --sources <private-reviewed-sources.json> --output <private-stage>
+python3 -B -I scripts/video_dataset.py --source <reviewed-videos.csv> \
+  --queue <reviewed-queue.csv> --output <private-stage>/videos.json
+npm test
+npm run check
+npm run typecheck
+python3 -B -m unittest discover -s tests -p 'test_*.py' -v
+ruff check scripts/preview-control.py scripts/preview_update.py scripts/report_library.py scripts/video_dataset.py tests/test_preview_control.py tests/test_preview_update.py tests/test_report_library.py tests/browser_smoke.py
+ruff format --check scripts/preview-control.py scripts/preview_update.py scripts/report_library.py scripts/video_dataset.py tests/test_preview_control.py tests/test_preview_update.py tests/test_report_library.py tests/browser_smoke.py
+WRANGLER_SEND_METRICS=false CI=true node node_modules/wrangler/bin/wrangler.js deploy --dry-run --outdir <private-build>
+python3 -B tests/browser_smoke.py --stage <private-stage> --evidence <private-browser-evidence>
+```
+
+Browser gates require the shared low-priority/capped host slot in TOC. Use the actual available capacity; do not delete others' trees. The browser gate intercepts the exact local private bytes at the canonical URL under the production CSP; it makes no real login or external request. Its evidence covers 360/390/768/1280 layouts and functional/keyboard/injection/error paths. The real T453 live-access verification remains separate evidence.
+
+## Guarded update and rollback — coordinator only, not applied
+
+After commit, prepare from the clean reviewed source under the Cloudflare Infisical wrapper:
+
+```sh
+python3 -B -I scripts/preview_update.py prepare --packet <new-private-packet> \
+  --original <original-sealed-packet> --rendered <private-stage> \
+  --catalogue <private-catalogue.json> --bundle <private-build>/worker.js
+python3 -B -I scripts/preview_update.py preflight --packet <packet> --seal <seal> --review-head <head>
+```
+
+Preparation performs provider GETs only. It seals current Worker version/source, complete settings fingerprint, existing app/policy and exact source staff policy/providers, disabled alternate origins, domain mapping and R2 privacy; it checks no other Worker can read the bucket. It verifies all three original live objects against their original seals and new object absence, copies original rollback bodies and the new exact objects, and binds the unchanged original installation journal hash. The private packet is 0700 / files 0600. No staff email, JWT or secret value is written to it. The fixed videos dataset readback is bounded to 6 MB.
+
+Main must run its own gates and obtain independent different-vendor security/design APPROVE on the exact head and seal before any write. The final handoff supplies full immutable diff/context, screenshots and exact commands.
+
+```sh
+python3 -B -I scripts/preview_update.py update --packet <packet> --seal <seal> --review-head <head> --apply
+python3 -B -I scripts/preview_update.py rollback --packet <packet> --seal <seal> --review-head <head> --apply
+```
+
+Both mutations take the packet lock. Update refuses an existing update journal and journals intent before each provider write. It rechecks the complete captured baseline, uploads only the reviewed guarded Worker with the same existing binding/audience values, verifies source/control-plane equality, then puts only registered private objects with hash readback. The index is last, so new links are advertised after their targets exist. It never creates, updates or deletes Access apps/policies, source audience, custom domains, aliases or public objects. Loss of a response stops; never retry update blindly.
+
+Rollback only accepts the exact updated or original protected Worker, checks ownership of all objects, restores old index/report bytes and deletes newly added registered objects before restoring the **protected** live baseline version. It never restores the pre-T453 unguarded version or reopens aliases, and leaves the Access app/audience and original installation journal untouched. A changed object/control-plane state or failed deletion stops with protection retained. Partial rollback can resume from its own intent journal after inspection; never use the original installation rollback for this update. Post-update authenticated content, explorer functionality, signed-out/other-user/alternate-origin and public-site checks are required before claiming verified live.
+
+---
+
 # Private report preview — T453
 
 Ticket T453 / f76d7df8-6ff1-40eb-8896-338bcaf007e3; related T454 / fb5a63a6-9105-4108-b428-7f3ca61277f0.

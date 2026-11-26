@@ -5,8 +5,8 @@
   "scripts": {
     "deploy": "node scripts/sync-r2.mjs && wrangler deploy --keep-vars",
     "sync:r2": "node scripts/sync-r2.mjs",
-    "test": "node --test tests/preview.test.mjs",
-    "check": "node --check src/worker.js && node --check src/preview.js",
+    "test": "node --test tests/preview.test.mjs tests/video-explorer.test.mjs",
+    "check": "node --check src/worker.js && node --check src/preview.js && node --check src/video-explorer.js",
     "typecheck": "tsc -p jsconfig.json"
   },
   "devDependencies": {
