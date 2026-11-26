@@ -1,3 +1,5 @@
+import { isPreview, preview } from './preview.js';
+
 const MIME = {
   css: 'text/css; charset=utf-8',
   html: 'text/html; charset=utf-8',
@@ -35,6 +37,7 @@ export default {
 
     const key = objectKey(new URL(request.url).pathname);
     if (!key) return new Response('Bad request', { status: 400 });
+    if (isPreview(key)) return preview(request, env, key);
 
     const object = await env.SITE_BUCKET.get(key);
     if (!object) return new Response('Not found', { status: 404 });

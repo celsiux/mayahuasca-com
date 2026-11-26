@@ -2,6 +2,8 @@
   "name": "mayahuasca-site",
   "compatibility_date": "2026-10-22",
   "main": "./src/worker.js",
+  "workers_dev": false,
+  "preview_urls": false,
   "r2_buckets": [
     {
       "binding": "SITE_BUCKET",
