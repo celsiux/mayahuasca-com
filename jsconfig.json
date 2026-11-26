@@ -10,7 +10,8 @@
       "ES2022",
       "DOM"
     ],
-    "skipLibCheck": true
+    "skipLibCheck": true,
+    "resolveJsonModule": true
   },
   "include": [
     "src/*.js"

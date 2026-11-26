@@ -126,3 +126,30 @@ test('both alternate URL classes explicitly disabled in production config',()=>{
   assert.equal(config.workers_dev,false);assert.equal(config.preview_urls,false);
   assert.equal(config.name,'mayahuasca-site');assert.equal(config.r2_buckets[0].bucket_name,'maya-site');
 });
+
+for (const path of ['/preview/maya-tiktok-historico.html', '/preview/videos.html', '/preview/video-explorer.js', '/preview/videos.json']) {
+  test(`registered library resource requires staff auth: ${path}`, async () => {
+    assert.equal((await fetchDoc(path)).status, 403); assert.equal(reads.length, 0);
+    assert.equal((await fetchDoc(path, await token({ email: 'outsider@example.invalid' }))).status, 403); assert.equal(reads.length, 0);
+    const r = await fetchDoc(path, await token());
+    assert.equal(r.status, 200); assert.deepEqual(reads, [path.slice(1)]);
+    assert.equal(r.headers.get('Cache-Control'), 'private, no-store, max-age=0');
+    assert.match(r.headers.get('Content-Type'), path.endsWith('.json') ? /application\/json/ : path.endsWith('.js') ? /application\/javascript/ : /text\/html/);
+    for (const host of ['https://www.mayahuasca.com', 'https://new.mayahuasca.com', 'https://old.example.workers.dev']) {
+      assert.equal((await fetchDoc(path, await token(), { host })).status, 403); assert.equal(reads.length, 0);
+    }
+    assert.equal((await fetchDoc(path, await token(), { method: 'PUT' })).status, 405); assert.equal(reads.length, 0);
+  });
+}
+test('only the explorer receives exact script/data CSP sources', async () => {
+  const explorer = await fetchDoc('/preview/videos.html', await token());
+  assert.equal(explorer.headers.get('Content-Security-Policy'), "default-src 'none'; style-src 'unsafe-inline'; base-uri 'none'; object-src 'none'; frame-ancestors 'none'; form-action 'none'; script-src https://mayahuasca.com/preview/video-explorer.js; connect-src https://mayahuasca.com/preview/videos.json");
+  for (const path of ['/preview/', '/preview/maya-tiktok-historico.html', '/preview/videos.json']) {
+    const r = await fetchDoc(path, await token()); assert.doesNotMatch(r.headers.get('Content-Security-Policy'), /script-src|connect-src/);
+  }
+});
+test('encoded assets and unregistered datasets never read storage', async () => {
+  for (const path of ['/preview/%76ideos.json', '/preview/videos.csv', '/preview/data/private.json', '/preview/video-explorer.js/x', '/preview/%76ideo-explorer.js']) {
+    assert.ok([400, 404].includes((await fetchDoc(path, await token())).status)); assert.equal(reads.length, 0);
+  }
+});
