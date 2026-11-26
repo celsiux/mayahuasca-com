@@ -39,7 +39,10 @@ FORBIDDEN = [
     re.compile(r"[\w.+-]+@[\w-]+\.[\w.-]+"),
     re.compile(r"\+\d[\d \-]{7,}\d|\b\d{10,}\b"),
     re.compile(
-        r"(?:Bearer\s+|eyJ[a-zA-Z0-9_-]+\.eyJ|-----BEGIN .*PRIVATE KEY|(?:api[_-]?key|token|secret)\s*[=:]\s*\S+)",
+        r"(?:Bearer\s+|eyJ[a-zA-Z0-9_-]+\.eyJ|-----BEGIN .*PRIVATE KEY|"
+        r"(?:api[_-]?key|token|secret)\s*=\s*\S+|"
+        r"[\"'](?:api[_-]?key|token|secret)[\"']\s*:\s*[\"'][^\"']+|"
+        r"(?:api[_-]?key|token|secret)\s*:\s*(?:[\"']\S+|[A-Za-z0-9_+/-]{20,}))",
         re.I,
     ),
 ]
@@ -74,7 +77,8 @@ def safe_link(value):
     if value == "https://mayahuasca.com/":
         return
     if re.fullmatch(
-        r"https://support\.google\.com/youtube/answer/\d{1,9}(?:\?hl=(?:es|en))?", value
+        r"https://support\.google\.com/youtube/answer/\d{1,9}(?:\?hl=(?:es|en|en-uk))?",
+        value,
     ):
         return
     if value.startswith("#") and re.fullmatch(r"#[a-zA-Z0-9_-]+", value):

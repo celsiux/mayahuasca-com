@@ -107,6 +107,9 @@ class LibraryTests(unittest.TestCase):
             "123456789012",
             "Bearer some-token",
             "token=private",
+            '"token": "private"',
+            "secret: 'short'",
+            "api_key: abcdefghijklmnopqrstuvwxyz",
         ]:
             with self.subTest(value=value), self.assertRaises(ValueError):
                 lib.render_library([item(purpose=value)])
@@ -142,6 +145,9 @@ class LibraryTests(unittest.TestCase):
     def test_official_documentation_links_are_explicit_and_do_not_widen_tiktok_exception(
         self,
     ):
+        lib.private_guard(
+            "Developer token: Now access levels are associated with Google Cloud projects"
+        )
         for url in [
             "https://developers.facebook.com/documentation/ads-commerce/marketing-api/insights",
             "https://developers.google.com/google-ads/api/docs/campaigns/overview",
@@ -166,6 +172,7 @@ class LibraryTests(unittest.TestCase):
             "https://www.youtube.com/watch?v=ABCDEFGHIJK",
             "https://www.youtube.com/channel/UC" + "A" * 22,
             "https://support.google.com/youtube/answer/9313698?hl=es",
+            "https://support.google.com/youtube/answer/13748639?hl=en-uk",
         ]:
             lib.safe_link(url)
         for url in [
